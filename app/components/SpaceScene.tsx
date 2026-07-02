@@ -5,19 +5,17 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { Stars, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
-// --- 1. NEW: RED FALLING STARS (METEOR SHOWER) ---
+// --- 1. RED FALLING STARS (METEOR SHOWER) ---
 function RedFallingStars({ count = 15 }) {
   const groupRef = useRef<THREE.Group>(null);
 
-  // Initialize random starting positions, speeds, and lengths for each meteor
   const starsData = useMemo(() => {
     return new Array(count).fill(0).map(() => ({
       x: THREE.MathUtils.randFloat(-100, 50),
-      // Randomly spawn them very high up so they enter the screen at different times
       y: THREE.MathUtils.randFloat(20, 150), 
-      z: THREE.MathUtils.randFloat(-40, -10), // Random depth behind/in front of Saturn
-      speed: THREE.MathUtils.randFloat(30, 80), // Super fast movement
-      scale: THREE.MathUtils.randFloat(3, 8), // Length of the meteor's tail
+      z: THREE.MathUtils.randFloat(-40, -10),
+      speed: THREE.MathUtils.randFloat(30, 80),
+      scale: THREE.MathUtils.randFloat(3, 8),
     }));
   }, [count]);
 
@@ -27,11 +25,9 @@ function RedFallingStars({ count = 15 }) {
     groupRef.current.children.forEach((child, i) => {
       const data = starsData[i];
       
-      // Move diagonally (Down and Right)
       child.position.y -= data.speed * delta;
       child.position.x += data.speed * delta;
 
-      // When the meteor goes off the bottom of the screen, reset it back to the top left
       if (child.position.y < -40) {
         child.position.y = THREE.MathUtils.randFloat(30, 150);
         child.position.x = THREE.MathUtils.randFloat(-120, 0); 
@@ -46,13 +42,9 @@ function RedFallingStars({ count = 15 }) {
         <mesh 
           key={i} 
           position={[data.x, data.y, data.z]} 
-          // Rotate 45 degrees so the "head" points down and right matching the movement
           rotation={[0, 0, Math.PI / 4]} 
         >
-          {/* A cylinder that acts as a streak of light: thin tail at the top, wider head at the bottom */}
           <cylinderGeometry args={[0.001, 0.05, data.scale, 8]} />
-          
-          {/* Vibrant Red color with Additive Blending so it fiercely glows in the dark */}
           <meshBasicMaterial 
             color="#ff1122" 
             transparent 
@@ -66,37 +58,7 @@ function RedFallingStars({ count = 15 }) {
   );
 }
 
-// --- 2. BACKGROUND SCENE (SATURN + STARS + FALLING STARS) ---
-function Saturn() {
-  const { scene } = useGLTF("/saturn.glb");
-  const saturnRef = useRef<THREE.Group>(null);
-
-  useFrame((_, delta) => {
-    if (saturnRef.current) {
-      saturnRef.current.rotation.y += delta * 0.05;
-      saturnRef.current.rotation.z = 0.05;
-
-      const scrollY = window.scrollY;
-      const viewportH = window.innerHeight;
-      const progress = Math.min(scrollY / viewportH, 1);
-      
-      const targetY = -25 + (progress * 25);
-      
-      saturnRef.current.position.y = THREE.MathUtils.lerp(
-        saturnRef.current.position.y,
-        targetY,
-        0.05
-      );
-    }
-  });
-
-  return (
-    <group ref={saturnRef} position={[0, -25, -10]}>
-      <primitive object={scene} scale={8} />
-    </group>
-  );
-}
-
+// --- 2. BACKGROUND SCENE (STARS + FALLING STARS ONLY) ---
 export function BackgroundScene() {
   return (
     <div className="fixed inset-0 z-0 bg-black pointer-events-none overflow-hidden">
@@ -108,12 +70,8 @@ export function BackgroundScene() {
         {/* Subtle background static stars */}
         <Stars radius={100} depth={50} count={6000} factor={4} fade speed={0.5} />
         
-        {/* Our New Red Meteor Shower */}
+        {/* Red Meteor Shower */}
         <RedFallingStars count={12} />
-
-        <Suspense fallback={null}>
-          <Saturn />
-        </Suspense>
       </Canvas>
     </div>
   );
@@ -155,5 +113,5 @@ export function MoonCanvas() {
   );
 }
 
-useGLTF.preload("/saturn.glb");
+// Preload ONLY the moon model now
 useGLTF.preload("/moon.glb");
