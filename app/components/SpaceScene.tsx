@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, Suspense, useMemo } from "react";
+import { useRef, Suspense, useMemo, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Stars, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
@@ -24,11 +24,9 @@ function RedFallingStars({ count = 15 }) {
     groupRef.current.children.forEach((child, i) => {
       const data = starsData[i];
       
-      // Move diagonally (down and right)
       child.position.y -= data.speed * delta;
       child.position.x += data.speed * delta;
 
-      // Reset when they go off-screen
       if (child.position.y < -40) {
         child.position.y = THREE.MathUtils.randFloat(30, 150);
         child.position.x = THREE.MathUtils.randFloat(-120, 0); 
@@ -40,26 +38,16 @@ function RedFallingStars({ count = 15 }) {
   return (
     <group ref={groupRef}>
       {starsData.map((data, i) => (
-        <mesh 
-          key={i} 
-          position={[data.x, data.y, data.z]} 
-          rotation={[0, 0, Math.PI / 4]} 
-        >
+        <mesh key={i} position={[data.x, data.y, data.z]} rotation={[0, 0, Math.PI / 4]}>
           <cylinderGeometry args={[0.001, 0.05, data.scale, 8]} />
-          <meshBasicMaterial 
-            color="#f8f8f8" 
-            transparent 
-            opacity={0.8} 
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-          />
+          <meshBasicMaterial color="#ff1122" transparent opacity={0.8} blending={THREE.AdditiveBlending} depthWrite={false} />
         </mesh>
       ))}
     </group>
   );
 }
 
-// --- 2. BACKGROUND SCENE (STARS + FALLING STARS ONLY) ---
+// --- 2. BACKGROUND SCENE ---
 export function BackgroundScene() {
   return (
     <div className="fixed inset-0 z-0 bg-black pointer-events-none overflow-hidden">
@@ -67,11 +55,7 @@ export function BackgroundScene() {
         <ambientLight intensity={0.2} />
         <directionalLight position={[10, 10, 5]} intensity={2} color="#ffffff" />
         <directionalLight position={[-10, -10, -5]} intensity={0.5} color="#4b6584" />
-        
-        {/* Subtle background static stars */}
         <Stars radius={100} depth={50} count={6000} factor={4} fade speed={0.5} />
-        
-        {/* Red Meteor Shower */}
         <RedFallingStars count={12} />
       </Canvas>
     </div>
@@ -79,17 +63,6 @@ export function BackgroundScene() {
 }
 
 // --- 3. INLINE MOON CANVAS ---
-
-// This instantly loads while the real moon is downloading
-function MoonFallback() {
-  return (
-    <mesh scale={1.65}>
-      <sphereGeometry args={[1, 32, 32]} />
-      {/* A dark grey material that blends nicely with the dark background */}
-      <meshBasicMaterial color="#1a1a1a" /> 
-    </mesh>
-  );
-}
 
 function Moon() {
   const { scene } = useGLTF("/moon.glb");
@@ -103,29 +76,43 @@ function Moon() {
 
   return (
     <group ref={moonRef}>
-      <primitive object={scene} scale={1.65} />
+      <primitive object={scene} scale={1.9} />
     </group>
   );
 }
 
 export function MoonCanvas() {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   return (
-    <div className="relative inline-flex items-center justify-center w-[0.95em] h-[0.95em] align-middle ml-[0.3em] mr-[0.01em] -mt-[0.06em]">
-      <Canvas 
-        camera={{ position: [0, 0, 6], fov: 40 }}
-        gl={{ alpha: true, antialias: true }}
-      >
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[5, 3, 5]} intensity={3} color="#ffffff" />
-        <directionalLight position={[-5, -3, -5]} intensity={1} color="#a0c0ff" />
-        
-        <Suspense fallback={<MoonFallback />}>
-          <Moon />
-        </Suspense>
-      </Canvas>
+    <div className="relative flex items-center justify-center w-[0.85em] h-[0.85em] ml-[0.25em] -mr-[0.04em]">
+      
+      {/* 
+        NO MORE TEXTURED BACKGROUND! 
+        Just the pure 3D canvas so we don't get that weird double-edge/halo effect.
+      */}
+      {isMounted && (
+        <Canvas 
+          className="absolute inset-0 z-10 rounded-full"
+          style={{ background: 'transparent' }}
+          camera={{ position: [0, 0, 6], fov: 40 }}
+          gl={{ alpha: true, antialias: true }}
+        >
+          <ambientLight intensity={0.5} />
+          <directionalLight position={[5, 3, 5]} intensity={3} color="#ffffff" />
+          <directionalLight position={[-5, -3, -5]} intensity={1} color="#a0c0ff" />
+          
+          <Suspense fallback={null}>
+            <Moon />
+          </Suspense>
+        </Canvas>
+      )}
     </div>
   );
 }
 
-// Preload the moon model
 useGLTF.preload("/moon.glb");
