@@ -21,13 +21,14 @@ function RedFallingStars({ count = 15 }) {
 
   useFrame((_, delta) => {
     if (!groupRef.current) return;
-
     groupRef.current.children.forEach((child, i) => {
       const data = starsData[i];
       
+      // Move diagonally (down and right)
       child.position.y -= data.speed * delta;
       child.position.x += data.speed * delta;
 
+      // Reset when they go off-screen
       if (child.position.y < -40) {
         child.position.y = THREE.MathUtils.randFloat(30, 150);
         child.position.x = THREE.MathUtils.randFloat(-120, 0); 
@@ -46,7 +47,7 @@ function RedFallingStars({ count = 15 }) {
         >
           <cylinderGeometry args={[0.001, 0.05, data.scale, 8]} />
           <meshBasicMaterial 
-            color="#ff1122" 
+            color="#f8f8f8" 
             transparent 
             opacity={0.8} 
             blending={THREE.AdditiveBlending}
@@ -78,6 +79,18 @@ export function BackgroundScene() {
 }
 
 // --- 3. INLINE MOON CANVAS ---
+
+// This instantly loads while the real moon is downloading
+function MoonFallback() {
+  return (
+    <mesh scale={1.65}>
+      <sphereGeometry args={[1, 32, 32]} />
+      {/* A dark grey material that blends nicely with the dark background */}
+      <meshBasicMaterial color="#1a1a1a" /> 
+    </mesh>
+  );
+}
+
 function Moon() {
   const { scene } = useGLTF("/moon.glb");
   const moonRef = useRef<THREE.Group>(null);
@@ -105,7 +118,8 @@ export function MoonCanvas() {
         <ambientLight intensity={0.5} />
         <directionalLight position={[5, 3, 5]} intensity={3} color="#ffffff" />
         <directionalLight position={[-5, -3, -5]} intensity={1} color="#a0c0ff" />
-        <Suspense fallback={null}>
+        
+        <Suspense fallback={<MoonFallback />}>
           <Moon />
         </Suspense>
       </Canvas>
@@ -113,5 +127,5 @@ export function MoonCanvas() {
   );
 }
 
-// Preload ONLY the moon model now
+// Preload the moon model
 useGLTF.preload("/moon.glb");
