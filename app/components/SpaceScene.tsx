@@ -40,7 +40,7 @@ function RedFallingStars({ count = 15 }) {
       {starsData.map((data, i) => (
         <mesh key={i} position={[data.x, data.y, data.z]} rotation={[0, 0, Math.PI / 4]}>
           <cylinderGeometry args={[0.001, 0.05, data.scale, 8]} />
-          <meshBasicMaterial color="#ff1122" transparent opacity={0.8} blending={THREE.AdditiveBlending} depthWrite={false} />
+          <meshBasicMaterial color="#ffffff" transparent opacity={0.8} blending={THREE.AdditiveBlending} depthWrite={false} />
         </mesh>
       ))}
     </group>
